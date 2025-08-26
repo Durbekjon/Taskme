@@ -15,6 +15,7 @@ export class EmailService {
   })
 
   sendRegistrationOtp = async (email: string, otp: string) => {
+    console.log('Sending registration OTP to', email, otp)
     return this.transporter.sendMail({
       from: process.env.EMAIL_FROM,
       to: email,
