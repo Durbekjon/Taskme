@@ -47,4 +47,15 @@ export class TaskQueryDto {
   @Type(() => Number)
   @IsNumber()
   limit: number = 12
+
+  @ApiProperty({
+    name: 'filters',
+    description:
+      'Dynamic filters in JSON format, e.g. {"name":"838","priority":["HIGH","MEDIUM"]}',
+    required: false,
+    example: '{"name":"838","priority":["HIGH","MEDIUM"]}',
+  })
+  @IsString()
+  @IsOptional()
+  filters?: string
 }

@@ -26,7 +26,7 @@ export class TaskRepository implements OnModuleInit {
     reqQuery: TaskQueryDto,
   ): Promise<{ tasks: Task[]; pagination: IPagination }> {
     const { sheetId, memberId } = options
-    const { page = 1, limit = 12, search, order } = reqQuery
+    const { page = 1, limit = 12, search, filters } = reqQuery
 
     const parsedPage = Number(page)
     const parsedLimit = Number(limit)
@@ -39,6 +39,14 @@ export class TaskRepository implements OnModuleInit {
           some: { id: memberId },
         },
       }),
+    }
+
+    if (filters) {
+      console.log(this.validateFilters(filters))
+      whereConditions = {
+        ...(whereConditions as Prisma.TaskWhereInput),
+        ...this.validateFilters(filters),
+      }
     }
 
     if (search) {
@@ -322,5 +330,60 @@ export class TaskRepository implements OnModuleInit {
 
   private toIsoStringIfExists(date) {
     return date ? new Date(date).toISOString() : undefined
+  }
+  private validateFilters(filters: string) {
+    const parsedFilters = JSON.parse(filters)
+    Object.keys(parsedFilters).forEach((key) => {
+      if (key === 'name') {
+        parsedFilters[key] = {
+          contains: parsedFilters[key],
+          mode: 'insensitive',
+        }
+      }
+      if (key === 'status' || key === 'priority') {
+        if (Array.isArray(parsedFilters[key])) {
+          parsedFilters[key] = { in: parsedFilters[key] } // Prisma supports 'in' for strings
+        } else {
+          parsedFilters[key] = { equals: parsedFilters[key] }
+        }
+      }
+
+      if (key === 'links') {
+        parsedFilters[key] = { in: parsedFilters[key] }
+      }
+      if (key === 'price') {
+        parsedFilters[key] = { equals: parsedFilters[key] }
+      }
+      if (key === 'paid') {
+        parsedFilters[key] = { equals: Boolean(parsedFilters[key]) }
+      }
+      if (key === 'members') {
+        parsedFilters[key] = { in: parsedFilters[key] }
+      }
+      if (key.startsWith('text')) {
+        parsedFilters[key] = {
+          contains: parsedFilters[key],
+          mode: 'insensitive',
+        }
+      }
+      if (key.startsWith('number')) {
+        parsedFilters[key] = { equals: parsedFilters[key] }
+      }
+      if (key.startsWith('checkbox')) {
+        parsedFilters[key] = { equals: Boolean(parsedFilters[key]) }
+      }
+      if (key.startsWith('select')) {
+        parsedFilters[key] = { in: parsedFilters[key] }
+      }
+      if (key.startsWith('date')) {
+        parsedFilters[key] = { equals: new Date(parsedFilters[key]) }
+      }
+      if (key.startsWith('duedate')) {
+        parsedFilters[key] = {
+          in: parsedFilters[key].map((date) => new Date(date)),
+        }
+      }
+    })
+    return parsedFilters
   }
 }
