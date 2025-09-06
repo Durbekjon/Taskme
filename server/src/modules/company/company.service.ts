@@ -57,12 +57,19 @@ export class CompanyService {
     const role = await this.validateUserRole(user)
     const company = await this.getOne(role.companyId, user)
 
-    const { plan, usageStats } = await this.getCompanyUsageData(company.id)
-
+    const { plan, usageStats, subscription: SubscriptionPrisma } = await this.getCompanyUsageData(company.id)
+    const subscription = {
+      startDate: SubscriptionPrisma.startDate,
+      endDate: SubscriptionPrisma.endDate,
+      isExpired: SubscriptionPrisma.isExpired,
+      status: SubscriptionPrisma.status,
+      isExpiried: SubscriptionPrisma.isExpired,
+    }
     return {
       plan,
       ...usageStats,
       usageInPercent: this.calculateUsagePercentages(usageStats, plan),
+      subscription,
     }
   }
 
@@ -108,7 +115,7 @@ export class CompanyService {
       throw new BadRequestException('Plan not found')
     }
 
-    return { plan, usageStats }
+    return { plan, usageStats, subscription: lastSubscription }
   }
 
   /**
