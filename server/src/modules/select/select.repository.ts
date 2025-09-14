@@ -41,7 +41,9 @@ export class SelectRepository {
         id: { in: id },
       },
       include: {
-        options: true,
+        options: {
+          orderBy: { order: 'asc' },
+        },
       },
     })
   }
@@ -50,7 +52,9 @@ export class SelectRepository {
     return this.prisma.select.findMany({
       where: { companyId },
       include: {
-        options: true,
+        options: {
+          orderBy: { order: 'asc' },
+        },
       },
       orderBy: { id: 'desc' },
     })
@@ -60,7 +64,9 @@ export class SelectRepository {
     return this.prisma.select.findUnique({
       where: { id },
       include: {
-        options: true,
+        options: {
+          orderBy: { order: 'asc' },
+        },
       },
     })
   }

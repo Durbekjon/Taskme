@@ -235,6 +235,7 @@ model Option {
   name     String
   selectId String @map("select_id")
   color    String
+  order    Int    @default(0)
   select   Select @relation(fields: [selectId], references: [id], onDelete: Cascade)
 
   @@map("options")

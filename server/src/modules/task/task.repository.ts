@@ -358,7 +358,59 @@ export class TaskRepository implements OnModuleInit {
   }
   private validateFilters(filters: string) {
     try {
-      const parsedFilters = JSON.parse(filters)
+      // Clean up common malformed JSON patterns
+      let cleanedFilters = filters.trim()
+
+      console.log('Original filters:', filters)
+
+      // Fix common issues:
+      // 1. Handle the specific malformed pattern: ["key":[*value],"key2" ['"value2"])]
+      // Convert to proper JSON format
+
+      // Remove the outer array brackets and parentheses if present
+      cleanedFilters = cleanedFilters
+        .replace(/^\[/, '')
+        .replace(/\]$/, '')
+        .replace(/\)$/, '')
+
+      // Fix malformed array syntax like [*uuid] -> ["uuid"]
+      // Handle UUIDs with spaces like [*d51f55cd-7a4f-4f88-bb9c-b8fd 1"] -> ["d51f55cd-7a4f-4f88-bb9c-b8fd1"]
+      cleanedFilters = cleanedFilters.replace(
+        /\[\*([^\]]+?)\]/g,
+        (match, content) => {
+          // Remove any spaces and quotes from the content
+          const cleanContent = content.replace(/\s+/g, '').replace(/"/g, '')
+          return `["${cleanContent}"]`
+        },
+      )
+
+      // Fix malformed array syntax like ['"value"] -> ["value"]
+      cleanedFilters = cleanedFilters.replace(/\['"([^"]+?)"\]/g, '["$1"]')
+
+      // Fix missing quotes around keys (but be careful not to double-quote)
+      cleanedFilters = cleanedFilters.replace(/([^"]\w+):/g, '"$1":')
+
+      // Ensure proper JSON object format
+      if (!cleanedFilters.startsWith('{')) {
+        cleanedFilters = '{' + cleanedFilters
+      }
+      if (!cleanedFilters.endsWith('}')) {
+        cleanedFilters = cleanedFilters + '}'
+      }
+
+      // Fix any remaining syntax issues
+      // Handle spaces in keys like " status" -> "status"
+      cleanedFilters = cleanedFilters.replace(/"\s*(\w+)\s*":/g, '"$1":')
+
+      // Additional fix for keys with leading spaces
+      cleanedFilters = cleanedFilters.replace(/"\s+([^"]+?)":/g, '"$1":')
+
+      // Fix missing colons after keys like " status" ["value"] -> "status": ["value"]
+      cleanedFilters = cleanedFilters.replace(/"\s*([^"]+?)"\s*\[/g, '"$1": [')
+
+      console.log('Cleaned filters:', cleanedFilters)
+
+      const parsedFilters = JSON.parse(cleanedFilters)
 
       // Normalize filter keys to lowercase for consistency
       const normalizedFilters = {}

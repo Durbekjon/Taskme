@@ -13,6 +13,7 @@ import { RoleDto } from '@role/dto/role.dto'
 import { RoleTypes } from '@prisma/client'
 import { CreateOptionDto } from './dto/create-option.dto'
 import { UpdateOptionDto } from './dto/uptdate-option.dto'
+import { ReorderOptionsDto } from './dto/reorder-options.dto'
 
 @Injectable()
 export class OptionService {
@@ -48,6 +49,17 @@ export class OptionService {
     await this.repository.deleteMany(selectId)
 
     return { status: 'OK' }
+  }
+
+  async reorderOptions(user: IUser, body: ReorderOptionsDto) {
+    await this.validateUserRole(user)
+
+    await this.repository.reorderOptions(body)
+
+    return {
+      status: 'OK',
+      result: 'Options reordered successfully',
+    }
   }
 
   private async findOne(id: string) {

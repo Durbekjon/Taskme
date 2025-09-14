@@ -13,6 +13,7 @@ import { User } from '@decorators/user.decorator'
 import { IUser } from '@user/dto/IUser'
 import { CreateOptionDto } from './dto/create-option.dto'
 import { UpdateOptionDto } from './dto/uptdate-option.dto'
+import { ReorderOptionsDto } from './dto/reorder-options.dto'
 import { JwtAuthGuard } from '@guards/jwt-auth.guard'
 @ApiBearerAuth()
 @ApiTags('Option')
@@ -46,5 +47,11 @@ export class OptionController {
   @ApiOperation({ summary: 'Delete option' })
   deleteOption(@User() user: IUser, @Param('id') id: string) {
     return this.service.deleteOption(user, id)
+  }
+
+  @Put('reorder')
+  @ApiOperation({ summary: 'Reorder options' })
+  reorderOptions(@User() user: IUser, @Body() body: ReorderOptionsDto) {
+    return this.service.reorderOptions(user, body)
   }
 }
