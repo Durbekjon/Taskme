@@ -28,6 +28,15 @@ export class TaskRepository implements OnModuleInit {
     const { sheetId, memberId } = options
     const { page = 1, limit = 12, search, filters } = reqQuery
 
+    console.log('getTasksBySheet called with:', {
+      sheetId,
+      memberId,
+      page,
+      limit,
+      search,
+      filters,
+    })
+
     const parsedPage = Number(page)
     const parsedLimit = Number(limit)
 
@@ -42,10 +51,16 @@ export class TaskRepository implements OnModuleInit {
     }
 
     if (filters) {
-      console.log(this.validateFilters(filters))
-      whereConditions = {
-        ...(whereConditions as Prisma.TaskWhereInput),
-        ...this.validateFilters(filters),
+      try {
+        const validatedFilters = this.validateFilters(filters)
+        console.log('Validated filters:', validatedFilters)
+        whereConditions = {
+          ...(whereConditions as Prisma.TaskWhereInput),
+          ...validatedFilters,
+        }
+      } catch (error) {
+        console.error('Error processing filters:', error)
+        // Continue without filters if validation fails
       }
     }
 
@@ -119,6 +134,16 @@ export class TaskRepository implements OnModuleInit {
         },
       }
     } catch (error) {
+      console.error('Database error in getTasksBySheet:', {
+        sheetId,
+        memberId,
+        filters,
+        search,
+        page: parsedPage,
+        limit: parsedLimit,
+        error: error.message,
+        stack: error.stack,
+      })
       throw new Error(
         `Failed to fetch tasks for sheet ID ${sheetId}: ${error.message}`,
       )
@@ -332,58 +357,153 @@ export class TaskRepository implements OnModuleInit {
     return date ? new Date(date).toISOString() : undefined
   }
   private validateFilters(filters: string) {
-    const parsedFilters = JSON.parse(filters)
-    Object.keys(parsedFilters).forEach((key) => {
-      if (key === 'name') {
-        parsedFilters[key] = {
-          contains: parsedFilters[key],
-          mode: 'insensitive',
-        }
-      }
-      if (key === 'status' || key === 'priority') {
-        if (Array.isArray(parsedFilters[key])) {
-          parsedFilters[key] = { in: parsedFilters[key] } // Prisma supports 'in' for strings
-        } else {
-          parsedFilters[key] = { equals: parsedFilters[key] }
-        }
-      }
+    try {
+      const parsedFilters = JSON.parse(filters)
 
-      if (key === 'links') {
-        parsedFilters[key] = { in: parsedFilters[key] }
-      }
-      if (key === 'price') {
-        parsedFilters[key] = { equals: parsedFilters[key] }
-      }
-      if (key === 'paid') {
-        parsedFilters[key] = { equals: Boolean(parsedFilters[key]) }
-      }
-      if (key === 'members') {
-        parsedFilters[key] = { in: parsedFilters[key] }
-      }
-      if (key.startsWith('text')) {
-        parsedFilters[key] = {
-          contains: parsedFilters[key],
-          mode: 'insensitive',
+      // Normalize filter keys to lowercase for consistency
+      const normalizedFilters = {}
+      Object.keys(parsedFilters).forEach((key) => {
+        const normalizedKey = key.toLowerCase()
+        normalizedFilters[normalizedKey] = parsedFilters[key]
+      })
+
+      Object.keys(normalizedFilters).forEach((key) => {
+        const value = normalizedFilters[key]
+
+        // Skip null, undefined, or empty values
+        if (value === null || value === undefined || value === '') {
+          delete normalizedFilters[key]
+          return
         }
-      }
-      if (key.startsWith('number')) {
-        parsedFilters[key] = { equals: parsedFilters[key] }
-      }
-      if (key.startsWith('checkbox')) {
-        parsedFilters[key] = { equals: Boolean(parsedFilters[key]) }
-      }
-      if (key.startsWith('select')) {
-        parsedFilters[key] = { in: parsedFilters[key] }
-      }
-      if (key.startsWith('date')) {
-        parsedFilters[key] = { equals: new Date(parsedFilters[key]) }
-      }
-      if (key.startsWith('duedate')) {
-        parsedFilters[key] = {
-          in: parsedFilters[key].map((date) => new Date(date)),
+
+        if (key === 'name') {
+          normalizedFilters[key] = {
+            contains: value,
+            mode: 'insensitive',
+          }
+        } else if (key === 'status' || key === 'priority') {
+          if (Array.isArray(value)) {
+            // Filter out empty/null values from arrays
+            const validValues = value.filter(
+              (v) => v !== null && v !== undefined && v !== '',
+            )
+            if (validValues.length > 0) {
+              normalizedFilters[key] = { in: validValues }
+            } else {
+              delete normalizedFilters[key]
+            }
+          } else {
+            normalizedFilters[key] = { equals: value }
+          }
+        } else if (key === 'links') {
+          if (Array.isArray(value)) {
+            const validLinks = value.filter(
+              (v) => v !== null && v !== undefined && v !== '',
+            )
+            if (validLinks.length > 0) {
+              normalizedFilters[key] = { in: validLinks }
+            } else {
+              delete normalizedFilters[key]
+            }
+          } else {
+            normalizedFilters[key] = { equals: value }
+          }
+        } else if (key === 'price') {
+          const numValue = Number(value)
+          if (!isNaN(numValue)) {
+            normalizedFilters[key] = { equals: numValue }
+          } else {
+            delete normalizedFilters[key]
+          }
+        } else if (key === 'paid') {
+          normalizedFilters[key] = { equals: Boolean(value) }
+        } else if (key === 'members') {
+          if (Array.isArray(value)) {
+            const validMembers = value.filter(
+              (v) => v !== null && v !== undefined && v !== '',
+            )
+            if (validMembers.length > 0) {
+              normalizedFilters[key] = { in: validMembers }
+            } else {
+              delete normalizedFilters[key]
+            }
+          } else {
+            normalizedFilters[key] = { equals: value }
+          }
+        } else if (key.startsWith('text')) {
+          normalizedFilters[key] = {
+            contains: value,
+            mode: 'insensitive',
+          }
+        } else if (key.startsWith('number')) {
+          const numValue = Number(value)
+          if (!isNaN(numValue)) {
+            normalizedFilters[key] = { equals: numValue }
+          } else {
+            delete normalizedFilters[key]
+          }
+        } else if (key.startsWith('checkbox')) {
+          normalizedFilters[key] = { equals: Boolean(value) }
+        } else if (key.startsWith('select')) {
+          if (Array.isArray(value)) {
+            const validValues = value.filter(
+              (v) => v !== null && v !== undefined && v !== '',
+            )
+            if (validValues.length > 0) {
+              normalizedFilters[key] = { in: validValues }
+            } else {
+              delete normalizedFilters[key]
+            }
+          } else {
+            normalizedFilters[key] = { equals: value }
+          }
+        } else if (key.startsWith('date')) {
+          try {
+            const dateValue = new Date(value)
+            if (!isNaN(dateValue.getTime())) {
+              normalizedFilters[key] = { equals: dateValue }
+            } else {
+              delete normalizedFilters[key]
+            }
+          } catch {
+            delete normalizedFilters[key]
+          }
+        } else if (key.startsWith('duedate')) {
+          if (Array.isArray(value)) {
+            try {
+              const validDates = value
+                .filter((v) => v !== null && v !== undefined && v !== '')
+                .map((date) => new Date(date))
+                .filter((date) => !isNaN(date.getTime()))
+
+              if (validDates.length > 0) {
+                normalizedFilters[key] = { in: validDates }
+              } else {
+                delete normalizedFilters[key]
+              }
+            } catch {
+              delete normalizedFilters[key]
+            }
+          } else {
+            try {
+              const dateValue = new Date(value)
+              if (!isNaN(dateValue.getTime())) {
+                normalizedFilters[key] = { equals: dateValue }
+              } else {
+                delete normalizedFilters[key]
+              }
+            } catch {
+              delete normalizedFilters[key]
+            }
+          }
         }
-      }
-    })
-    return parsedFilters
+      })
+
+      return normalizedFilters
+    } catch (error) {
+      console.error('Error parsing filters:', error)
+      // Return empty object if parsing fails to avoid breaking the query
+      return {}
+    }
   }
 }

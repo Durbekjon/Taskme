@@ -57,5 +57,18 @@ export class TaskQueryDto {
   })
   @IsString()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        // Validate that the string is valid JSON
+        JSON.parse(value)
+        return value
+      } catch {
+        // Return null to trigger validation error
+        return null
+      }
+    }
+    return value
+  })
   filters?: string
 }
