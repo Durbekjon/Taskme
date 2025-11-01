@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strictNullChecks": false
+  },
+  "include": ["prisma/seed.ts"],
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  }
+}
+

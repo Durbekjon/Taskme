@@ -53,6 +53,10 @@ services:
       
       # Node Environment
       NODE_ENV: ${NODE_ENV:-production}
+      
+      # Admin Configuration (for seeding)
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     volumes:
       # Persist uploads directory
       - ./public/uploads:/app/public/uploads

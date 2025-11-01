@@ -124,6 +124,28 @@ docker-compose exec server npm run seed
 docker-compose exec server sh
 ```
 
+### Database Seeding
+
+To seed the database with initial data (admin user, plans, etc.):
+
+```bash
+# Run seed script in the running container
+docker-compose exec server npm run seed
+```
+
+**Prerequisites for seeding:**
+- Container must be running
+- Environment variables must be set (especially `STRIPE_SECRET_KEY`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`)
+- Database migrations must be applied
+
+**What gets seeded:**
+- Stripe products and prices for all plans (Free, Pro, Business, Enterprise)
+- Subscription plans in the database
+- Admin user (if `ADMIN_EMAIL` doesn't exist)
+- Admin company and role
+
+**Note:** The seed script is idempotent - running it multiple times won't create duplicates. It checks for existing data before creating.
+
 ### Rebuild after code changes
 ```bash
 docker-compose up -d --build

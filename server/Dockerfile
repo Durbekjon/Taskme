@@ -47,14 +47,22 @@ RUN addgroup -g 1001 -S nodejs && \
 # Copy package files
 COPY package*.json yarn.lock* ./
 
-# Install only production dependencies
-RUN if [ -f yarn.lock ]; then yarn install --frozen-lockfile --production && yarn cache clean; \
-    elif [ -f package-lock.json ]; then npm ci --only=production && npm cache clean --force; \
+# Install production dependencies and seed-related dev dependencies
+# We need ts-node and @types/bcrypt for running seed script
+RUN if [ -f yarn.lock ]; then \
+      yarn install --frozen-lockfile --production && \
+      yarn add --dev ts-node@latest @types/bcrypt@latest typescript@latest --frozen-lockfile && \
+      yarn cache clean; \
+    elif [ -f package-lock.json ]; then \
+      npm ci --only=production && \
+      npm install --save-dev ts-node@latest @types/bcrypt@latest typescript@latest && \
+      npm cache clean --force; \
     else echo "Lockfile not found." && exit 1; \
     fi
 
-# Copy Prisma schema
+# Copy Prisma schema and seed config
 COPY --from=build /app/prisma ./prisma
+COPY --from=build /app/tsconfig.seed.json ./tsconfig.seed.json
 
 # Generate Prisma Client in production stage (required for runtime)
 RUN npx prisma generate

@@ -1,15 +1,37 @@
 import * as bcrypt from 'bcrypt'
 import { PrismaClient } from '@prisma/client'
-import { PASSWORD_SALT } from '../src/consts/password-salt'
 import Stripe from 'stripe'
-import { config } from 'dotenv'
-config() // Load environment variables from .env file
 
-const stripe: Stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+// In Docker, environment variables are already available from docker-compose
+// Only load .env file if running locally (when .env exists and we're not in Docker)
+import { config } from 'dotenv'
+if (process.env.NODE_ENV !== 'production' || !process.env.DATABASE_URL?.includes('postgres:')) {
+  config() // Load environment variables from .env file (for local development)
+}
+
+// Constants
+const PASSWORD_SALT = 10
+
+// Validate required environment variables
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
+
+if (!STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required')
+}
+
+if (!ADMIN_EMAIL) {
+  throw new Error('ADMIN_EMAIL environment variable is required')
+}
+
+if (!ADMIN_PASSWORD) {
+  throw new Error('ADMIN_PASSWORD environment variable is required')
+}
+
+const stripe: Stripe = new Stripe(STRIPE_SECRET_KEY, {
   apiVersion: '2025-02-24.acacia',
 })
-
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL
 
 const prisma = new PrismaClient()
 
@@ -221,6 +243,10 @@ async function createPlans(products: any[]) {
 }
 
 async function createAdminUser() {
+  if (!ADMIN_EMAIL) {
+    throw new Error('ADMIN_EMAIL is not defined')
+  }
+  
   const existData = await prisma.user.findUnique({
     where: { email: ADMIN_EMAIL },
   })
@@ -231,12 +257,16 @@ async function createAdminUser() {
       name: 'Admin Taskme',
     })
 
+    if (!ADMIN_PASSWORD) {
+      throw new Error('ADMIN_PASSWORD is not defined')
+    }
+    
     const user = await prisma.user.create({
       data: {
         firstName: 'Admin',
         lastName: 'Taskme',
         email: ADMIN_EMAIL,
-        password: await bcrypt.hash(process.env.ADMIN_PASSWORD, PASSWORD_SALT),
+        password: await bcrypt.hash(ADMIN_PASSWORD, PASSWORD_SALT),
         isAdmin: true,
         customerId: customer.id,
       },
