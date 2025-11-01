@@ -15,13 +15,37 @@ const execAsync = promisify(exec)
 export class BackupService {
   private readonly logger = new Logger(BackupService.name)
 
-  private readonly config = {
-    dbName: process.env.DB_NAME || 'eventify',
-    dbUser: process.env.DB_USER || 'durbek',
-    dbHost: process.env.DB_HOST || 'localhost',
-    dbPort: process.env.DB_PORT || '5432',
-    dbPassword: process.env.DB_PASSWORD || 'Saydaliyev0512',
-    backupFolder: '/tmp',
+  private readonly config = this.parseDatabaseConfig()
+
+  /**
+   * Parse database configuration from DATABASE_URL or individual environment variables
+   */
+  private parseDatabaseConfig() {
+    const databaseUrl = process.env.DATABASE_URL
+
+    if (databaseUrl) {
+      // Parse DATABASE_URL: postgresql://user:password@host:port/database
+      const url = new URL(databaseUrl)
+      return {
+        dbName: url.pathname.slice(1) || process.env.DB_NAME || 'eventify_db',
+        dbUser: url.username || process.env.DB_USER || 'eventify',
+        dbHost: url.hostname || process.env.DB_HOST || 'postgres',
+        dbPort: url.port || process.env.DB_PORT || '5432',
+        dbPassword: url.password || process.env.DB_PASSWORD || '',
+        backupFolder: '/tmp',
+      }
+    }
+
+    // Fallback to individual environment variables
+    return {
+      dbName: process.env.DB_NAME || process.env.POSTGRES_DB || 'eventify_db',
+      dbUser: process.env.DB_USER || process.env.POSTGRES_USER || 'eventify',
+      dbHost: process.env.DB_HOST || 'postgres',
+      dbPort: process.env.DB_PORT || process.env.POSTGRES_PORT || '5432',
+      dbPassword:
+        process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
+      backupFolder: '/tmp',
+    }
   }
 
   constructor(

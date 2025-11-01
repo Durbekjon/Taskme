@@ -38,13 +38,22 @@ jobs:
             # Change to project directory
             cd ~/eventify/server || cd eventify/server || { echo "❌ Directory eventify/server not found. Please ensure the directory exists."; exit 1; }
             
-            echo "📦 Stopping Docker containers..."
-            # Stop containers for this project (ignore errors if containers don't exist)
-            docker-compose down || true
+            echo "📦 Stopping and removing Docker containers..."
+            # Force stop and remove containers to avoid ContainerConfig metadata issues
+            # This handles compatibility issues with older docker-compose versions
             
-            # Also stop containers by name in case docker-compose.yml is missing
+            # Stop containers if they exist (ignore errors)
+            docker-compose down --remove-orphans 2>/dev/null || true
+            
+            # Force remove containers by name (bypasses docker-compose metadata reading)
             docker stop eventify-server eventify-postgres 2>/dev/null || true
-            docker rm eventify-server eventify-postgres 2>/dev/null || true
+            docker rm -f eventify-server eventify-postgres 2>/dev/null || true
+            
+            # Force remove using docker-compose (in case containers still exist)
+            docker-compose rm -f 2>/dev/null || true
+            
+            # Clean up any dangling containers with similar names
+            docker ps -a --filter "name=eventify" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
             
             echo "🔄 Pulling latest code from git..."
             # Pull latest changes
@@ -55,8 +64,8 @@ jobs:
             docker-compose build --no-cache || { echo "❌ Docker build failed"; exit 1; }
             
             echo "🚀 Starting Docker containers..."
-            # Start containers in detached mode
-            docker-compose up -d || { echo "❌ Docker start failed"; exit 1; }
+            # Start containers in detached mode with force recreate to avoid metadata issues
+            docker-compose up -d --force-recreate || { echo "❌ Docker start failed"; exit 1; }
             
             echo "⏳ Waiting for services to be healthy..."
             sleep 10

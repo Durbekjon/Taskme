@@ -29,9 +29,22 @@ if [ ! -f "$COMPOSE_FILE" ]; then
     fi
 fi
 
-echo -e "${YELLOW}📦 Stopping Docker containers...${NC}"
-# Stop containers (ignore errors if containers don't exist)
-docker-compose down || echo -e "${YELLOW}⚠️  No containers to stop${NC}"
+echo -e "${YELLOW}📦 Stopping and removing Docker containers...${NC}"
+# Force stop and remove containers to avoid ContainerConfig metadata issues
+# This handles compatibility issues with older docker-compose versions
+
+# Stop containers if they exist (ignore errors)
+docker-compose down --remove-orphans 2>/dev/null || true
+
+# Force remove containers by name (bypasses docker-compose metadata reading)
+docker stop eventify-server eventify-postgres 2>/dev/null || true
+docker rm -f eventify-server eventify-postgres 2>/dev/null || true
+
+# Force remove using docker-compose (in case containers still exist)
+docker-compose rm -f 2>/dev/null || true
+
+# Clean up any dangling containers with similar names
+docker ps -a --filter "name=eventify" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
 
 echo -e "${YELLOW}🔄 Pulling latest code from git...${NC}"
 # Check if git repository exists
@@ -49,8 +62,8 @@ echo -e "${YELLOW}🏗️  Building Docker containers...${NC}"
 docker-compose build --no-cache || { echo -e "${RED}❌ Docker build failed${NC}"; exit 1; }
 
 echo -e "${YELLOW}🚀 Starting Docker containers...${NC}"
-# Start containers in detached mode
-docker-compose up -d || { echo -e "${RED}❌ Docker start failed${NC}"; exit 1; }
+# Start containers in detached mode with force recreate to avoid metadata issues
+docker-compose up -d --force-recreate || { echo -e "${RED}❌ Docker start failed${NC}"; exit 1; }
 
 echo -e "${YELLOW}⏳ Waiting for services to be healthy...${NC}"
 sleep 10
