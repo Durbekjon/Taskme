@@ -24,20 +24,34 @@ export class BackupService {
     const databaseUrl = process.env.DATABASE_URL
 
     if (databaseUrl) {
-      // Parse DATABASE_URL: postgresql://user:password@host:port/database
-      const url = new URL(databaseUrl)
-      return {
-        dbName: url.pathname.slice(1) || process.env.DB_NAME || 'eventify_db',
-        dbUser: url.username || process.env.DB_USER || 'eventify',
-        dbHost: url.hostname || process.env.DB_HOST || 'postgres',
-        dbPort: url.port || process.env.DB_PORT || '5432',
-        dbPassword: url.password || process.env.DB_PASSWORD || '',
-        backupFolder: '/tmp',
+      try {
+        // Parse DATABASE_URL: postgresql://user:password@host:port/database?schema=public
+        const url = new URL(databaseUrl)
+        // Remove leading slash and any query params from pathname
+        const dbName =
+          url.pathname.slice(1).split('?')[0] ||
+          process.env.POSTGRES_DB ||
+          'eventify_db'
+
+        this.logger.debug(`Parsed database config from DATABASE_URL: ${dbName}`)
+
+        return {
+          dbName,
+          dbUser: url.username || process.env.POSTGRES_USER || 'eventify',
+          dbHost: url.hostname || process.env.DB_HOST || 'postgres',
+          dbPort: url.port || process.env.POSTGRES_PORT || '5432',
+          dbPassword: url.password || process.env.POSTGRES_PASSWORD || '',
+          backupFolder: '/tmp',
+        }
+      } catch (error) {
+        this.logger.warn(
+          `Failed to parse DATABASE_URL, using environment variables: ${error.message}`,
+        )
       }
     }
 
     // Fallback to individual environment variables
-    return {
+    const config = {
       dbName: process.env.DB_NAME || process.env.POSTGRES_DB || 'eventify_db',
       dbUser: process.env.DB_USER || process.env.POSTGRES_USER || 'eventify',
       dbHost: process.env.DB_HOST || 'postgres',
@@ -46,6 +60,9 @@ export class BackupService {
         process.env.DB_PASSWORD || process.env.POSTGRES_PASSWORD || '',
       backupFolder: '/tmp',
     }
+
+    this.logger.debug(`Using fallback database config: ${config.dbName}`)
+    return config
   }
 
   constructor(
