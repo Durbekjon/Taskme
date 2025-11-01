@@ -32,7 +32,6 @@ export class BackupService {
           url.pathname.slice(1).split('?')[0] ||
           process.env.POSTGRES_DB ||
           'eventify_db'
-//
         this.logger.debug(`Parsed database config from DATABASE_URL: ${dbName}`)
 
         return {
