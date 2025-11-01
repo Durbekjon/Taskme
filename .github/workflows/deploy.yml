@@ -36,7 +36,7 @@ jobs:
             echo "🚀 Starting deployment..."
             
             # Change to project directory
-            cd ~/eventify/server || cd eventify/server || { echo "❌ Directory eventify/server not found. Please ensure the directory exists."; exit 1; }
+            cd ~/Taskme/server || cd Taskme/server || { echo "❌ Directory Taskme/server not found. Please ensure the directory exists."; exit 1; }
             
             echo "📦 Stopping and removing Docker containers..."
             # Force stop and remove containers to avoid ContainerConfig metadata issues
