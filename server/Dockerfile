@@ -59,8 +59,6 @@ COPY --from=build /app/prisma ./prisma
 # Generate Prisma Client in production stage (required for runtime)
 RUN npx prisma generate
 
-RUN npx prisma migrate deploy
-
 # Copy built application
 COPY --from=build /app/dist ./dist
 
