@@ -3,14 +3,14 @@ version: '3.8'
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: eventify-postgres
+    container_name: taskme_db
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-eventify}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-eventify_password}
       POSTGRES_DB: ${POSTGRES_DB:-eventify_db}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-8001}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -25,10 +25,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: eventify-server
+    container_name: taskme_server
     restart: unless-stopped
     ports:
-      - "${SERVER_PORT:-4000}:4000"
+      - "${SERVER_PORT:-8000}:4000"
     environment:
       # Database
       DATABASE_URL: postgresql://${POSTGRES_USER:-eventify}:${POSTGRES_PASSWORD:-eventify_password}@postgres:5432/${POSTGRES_DB:-eventify_db}?schema=public

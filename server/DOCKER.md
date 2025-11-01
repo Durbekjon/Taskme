@@ -16,10 +16,10 @@ This guide explains how to run the Eventify server using Docker and Docker Compo
    POSTGRES_USER=eventify
    POSTGRES_PASSWORD=eventify_password
    POSTGRES_DB=eventify_db
-   POSTGRES_PORT=5432
+   POSTGRES_PORT=8001
 
    # Server Configuration
-   SERVER_PORT=4000
+   SERVER_PORT=8000
    NODE_ENV=production
    APP_MODE=production
 
@@ -63,13 +63,15 @@ This guide explains how to run the Eventify server using Docker and Docker Compo
 ## Services
 
 ### Server
-- **Port:** 4000 (configurable via `SERVER_PORT` in `.env`)
-- **Health Check:** `http://localhost:4000/api/v1/payment/health`
-- **API Documentation:** `http://localhost:4000/public/docs` (development mode only)
+- **Port:** 8000 (configurable via `SERVER_PORT` in `.env`)
+- **Container Name:** `taskme_server`
+- **Health Check:** `http://localhost:8000/api/v1/payment/health`
+- **API Documentation:** `http://localhost:8000/public/docs` (development mode only)
 - **Auto-migration:** Database migrations run automatically on startup
 
 ### PostgreSQL
-- **Port:** 5432 (configurable via `POSTGRES_PORT` in `.env`)
+- **Port:** 8001 (configurable via `POSTGRES_PORT` in `.env`)
+- **Container Name:** `taskme_db`
 - **Database:** eventify_db (configurable via `POSTGRES_DB` in `.env`)
 - **User:** eventify (configurable via `POSTGRES_USER` in `.env`)
 - **Data Persistence:** Stored in Docker volume `postgres_data`
@@ -213,12 +215,20 @@ For production:
 
 ### Backup PostgreSQL data
 ```bash
+# Using docker-compose (recommended)
 docker-compose exec postgres pg_dump -U eventify eventify_db > backup.sql
+
+# Or connect directly from host (using port 8001)
+PGPASSWORD=eventify_password pg_dump -h localhost -p 8001 -U eventify eventify_db > backup.sql
 ```
 
 ### Restore PostgreSQL data
 ```bash
+# Using docker-compose (recommended)
 docker-compose exec -T postgres psql -U eventify eventify_db < backup.sql
+
+# Or connect directly from host (using port 8001)
+PGPASSWORD=eventify_password psql -h localhost -p 8001 -U eventify eventify_db < backup.sql
 ```
 
 ### Inspect volumes

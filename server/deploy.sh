@@ -37,13 +37,14 @@ echo -e "${YELLOW}📦 Stopping and removing Docker containers...${NC}"
 docker-compose down --remove-orphans 2>/dev/null || true
 
 # Force remove containers by name (bypasses docker-compose metadata reading)
-docker stop eventify-server eventify-postgres 2>/dev/null || true
-docker rm -f eventify-server eventify-postgres 2>/dev/null || true
+docker stop taskme_server taskme_db 2>/dev/null || true
+docker rm -f taskme_server taskme_db 2>/dev/null || true
 
 # Force remove using docker-compose (in case containers still exist)
 docker-compose rm -f 2>/dev/null || true
 
 # Clean up any dangling containers with similar names
+docker ps -a --filter "name=taskme" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
 docker ps -a --filter "name=eventify" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
 
 echo -e "${YELLOW}🔄 Pulling latest code from git...${NC}"
@@ -80,7 +81,8 @@ docker-compose logs --tail=50
 # Optional: Health check
 echo -e "${YELLOW}🏥 Performing health check...${NC}"
 sleep 5
-if curl -f http://localhost:4000/api/v1/payment/health > /dev/null 2>&1; then
+SERVER_PORT=${SERVER_PORT:-8000}
+if curl -f http://localhost:${SERVER_PORT}/api/v1/payment/health > /dev/null 2>&1; then
     echo -e "${GREEN}✅ Health check passed!${NC}"
 else
     echo -e "${RED}⚠️  Health check failed - server may still be starting${NC}"
