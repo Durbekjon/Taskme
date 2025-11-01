@@ -1,0 +1,85 @@
+name: Deploy to Server
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  deploy:
+    name: Deploy to Production Server
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+        run: |
+          ssh $SSH_USER@$SSH_HOST << 'EOF'
+            set -e  # Exit on any error
+            
+            echo "🚀 Starting deployment..."
+            
+            # Change to project directory
+            cd ~/eventify/server || cd eventify/server || { echo "❌ Directory eventify/server not found. Please ensure the directory exists."; exit 1; }
+            
+            echo "📦 Stopping Docker containers..."
+            # Stop containers for this project (ignore errors if containers don't exist)
+            docker-compose down || true
+            
+            # Also stop containers by name in case docker-compose.yml is missing
+            docker stop eventify-server eventify-postgres 2>/dev/null || true
+            docker rm eventify-server eventify-postgres 2>/dev/null || true
+            
+            echo "🔄 Pulling latest code from git..."
+            # Pull latest changes
+            git pull origin main || { echo "❌ Git pull failed"; exit 1; }
+            
+            echo "🏗️ Building Docker containers..."
+            # Build containers
+            docker-compose build --no-cache || { echo "❌ Docker build failed"; exit 1; }
+            
+            echo "🚀 Starting Docker containers..."
+            # Start containers in detached mode
+            docker-compose up -d || { echo "❌ Docker start failed"; exit 1; }
+            
+            echo "⏳ Waiting for services to be healthy..."
+            sleep 10
+            
+            echo "🔍 Checking container status..."
+            docker-compose ps
+            
+            echo "✅ Deployment completed successfully!"
+            
+            # Show recent logs
+            echo "📋 Recent logs:"
+            docker-compose logs --tail=50
+          EOF
+
+      - name: Deployment notification
+        if: success()
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "🚀 Server is now running the latest code from main branch"
+
+      - name: Deployment failure notification
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs above for details."
+
