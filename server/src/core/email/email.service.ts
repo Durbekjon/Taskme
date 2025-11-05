@@ -1,18 +1,27 @@
 import { OTP_VALID_DURATION_MINUTES } from '@consts/token'
-import { Injectable } from '@nestjs/common'
+import { Injectable, Logger } from '@nestjs/common'
 import { createTransport } from 'nodemailer'
 
 @Injectable()
 export class EmailService {
+  private readonly logger = new Logger(EmailService.name)
   private transporter = createTransport({
     host: process.env.EMAIL_HOST,
-    port: 465,
-    secure: true,
+    port: parseInt(process.env.EMAIL_PORT || '465', 10),
+    secure: process.env.EMAIL_PORT !== '587',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD,
     },
   })
+
+  constructor() {
+    if (!process.env.EMAIL_HOST) {
+      this.logger.warn(
+        '⚠️ EMAIL_HOST is not set. Email functionality will not work.',
+      )
+    }
+  }
 
   sendRegistrationOtp = async (email: string, otp: string) => {
     console.log('Sending registration OTP to', email, otp)
