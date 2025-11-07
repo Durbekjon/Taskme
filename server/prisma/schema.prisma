@@ -1,7 +1,7 @@
 generator client {
-     provider      = "prisma-client-js"
-     binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
-   }
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-arm64-openssl-1.1.x"]
+}
 
 datasource db {
   provider = "postgresql"
@@ -9,30 +9,31 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  firstName     String?        @map("first_name")
-  lastName      String?        @map("last_name")
-  email         String         @unique
-  password      String
-  isAdmin       Boolean        @default(false)
-  selectedRole  String?        @map("selected_role")
-  customerId    String?        @map("customer_id")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  avatar        File?          @relation("user_avatars", fields: [avatarId], references: [id])
-  avatarId      String?        @map("avatar_id")
-  status        UserStatus     @default(ACTIVE)
-  companies     Company[]
-  logs          Log[]
-  members       Member[]
-  messages      Message[]
-  notifications Notification[]
-  roles         Role[]
-  transactions  Transaction[]
-  files         File[]         @relation("user_files")
-  paymentLogs   PaymentLog[]
-  tasks         Task[]
-  customizedForPlan Plan[]             @relation("customized_for_users")
+  id                String         @id @default(uuid())
+  firstName         String?        @map("first_name")
+  lastName          String?        @map("last_name")
+  email             String         @unique
+  password          String
+  isAdmin           Boolean        @default(false)
+  selectedRole      String?        @map("selected_role")
+  customerId        String?        @map("customer_id")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  avatar            File?          @relation("user_avatars", fields: [avatarId], references: [id])
+  avatarId          String?        @map("avatar_id")
+  status            UserStatus     @default(ACTIVE)
+  companies         Company[]
+  logs              Log[]
+  members           Member[]
+  messages          Message[]
+  notifications     Notification[]
+  roles             Role[]
+  transactions      Transaction[]
+  files             File[]         @relation("user_files")
+  paymentLogs       PaymentLog[]
+  tasks             Task[]
+  customizedForPlan Plan[]         @relation("customized_for_users")
+
   @@map("users")
 }
 
@@ -87,21 +88,21 @@ model Company {
 }
 
 model CompanySubscription {
-  id                   String   @id @default(uuid())
-  startDate            DateTime @map("start_date")
-  endDate              DateTime @map("end_date")
-  dueDate              Int      @default(30)
-  requestsCount        Int      @default(0)
-  isExpired            Boolean  @default(false)
-  stripeSubscriptionId String?  @map("stripe_subscription_id")
-  stripeItemId         String?  @map("stripe_item_id")
-  status               String   @default("ACTIVE")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                   String       @id @default(uuid())
+  startDate            DateTime     @map("start_date")
+  endDate              DateTime     @map("end_date")
+  dueDate              Int          @default(30)
+  requestsCount        Int          @default(0)
+  isExpired            Boolean      @default(false)
+  stripeSubscriptionId String?      @map("stripe_subscription_id")
+  stripeItemId         String?      @map("stripe_item_id")
+  status               String       @default("ACTIVE")
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
   planId               String
-  companyId            String   @map("company_id")
-  company              Company  @relation("company_subscriptions", fields: [companyId], references: [id], onDelete: Cascade)
-  plan                 Plan     @relation(fields: [planId], references: [id])
+  companyId            String       @map("company_id")
+  company              Company      @relation("company_subscriptions", fields: [companyId], references: [id], onDelete: Cascade)
+  plan                 Plan         @relation(fields: [planId], references: [id])
   paymentLogs          PaymentLog[]
 
   @@map("company_subscriptions")
@@ -202,29 +203,29 @@ model Plan {
   maxSheets            Int                   @map("max_sheets")
   maxMembers           Int                   @map("max_members")
   maxViewers           Int                   @map("max_viewers")
-  maxTasks             Int                   @map("max_tasks") 
+  maxTasks             Int                   @map("max_tasks")
   order                Int                   @default(autoincrement())
   stripePriceId        String?               @map("stripe_price_id")
   stripeProductId      String?               @map("stripe_product_id")
-  tags                 String?             
+  tags                 String?
   companies            Company[]
   companySubscriptions CompanySubscription[]
   transactions         Transaction[]
   paymentLogs          PaymentLog[]
   isCustomized         Boolean               @default(false)
   customizedForUsers   User[]                @relation("customized_for_users")
-  
+
   @@map("plans")
 }
 
 model Select {
   id        String   @id @default(uuid())
   color     String
-  companyId String?   @map("company_id")
+  companyId String?  @map("company_id")
   title     String   @default("untitled")
   columnId  String?  @map("column_id")
-  column   Column?  @relation(fields: [columnId], references: [id])
-  company   Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  column    Column?  @relation(fields: [columnId], references: [id])
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   options   Option[]
 
   @@map("selects")
@@ -253,76 +254,88 @@ model Column {
   company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sheet     Sheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   selects   Select[]
-  order     Int       @default(autoincrement())
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  
+  order     Int        @default(autoincrement())
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
   @@map("columns")
 }
 
 model Task {
-  id          String    @id @default(uuid())
-  status      String?
-  priority    String?
-  links       String[]
-  price       Int?
-  paid        Boolean?
-  text1       String?
-  text2       String?
-  text3       String?
-  text4       String?
-  text5       String?
-  number1     Int?
-  number2     Int?
-  number3     Int?
-  number4     Int?
-  number5     Int?
-  checkbox1   Boolean?
-  checkbox2   Boolean?
-  checkbox3   Boolean?
-  checkbox4   Boolean?
-  checkbox5   Boolean?
-  select1     String?
-  select2     String?
-  select3     String?
-  select4     String?
-  select5     String?
-  date1       DateTime?
-  date2       DateTime?
-  date3       DateTime?
-  date4       DateTime?
-  date5       DateTime?
+  id        String    @id @default(uuid())
+  status    String?
+  priority  String?
+  links     String[]
+  price     Int?
+  paid      Boolean?
+  text1     String?
+  text2     String?
+  text3     String?
+  text4     String?
+  text5     String?
+  number1   Int?
+  number2   Int?
+  number3   Int?
+  number4   Int?
+  number5   Int?
+  checkbox1 Boolean?
+  checkbox2 Boolean?
+  checkbox3 Boolean?
+  checkbox4 Boolean?
+  checkbox5 Boolean?
+  select1   String?
+  select2   String?
+  select3   String?
+  select4   String?
+  select5   String?
+  date1     DateTime?
+  date2     DateTime?
+  date3     DateTime?
+  date4     DateTime?
+  date5     DateTime?
 
-  duedate1    DateTime[]
-  duedate2    DateTime[]
-  duedate3    DateTime[]
-  duedate4    DateTime[]
-  duedate5    DateTime[]
-  workspaceId String    @map("workspace_id")
-  sheetId     String    @map("sheet_id")
-  companyId   String    @map("company_id")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  lastUpdatedByUserId String?   @map("last_updated_by_user_id")
-  lastUpdatedByUser User?   @relation(fields: [lastUpdatedByUserId], references: [id], onDelete: SetNull)
-  order       Int       @default(autoincrement())
-  name        String
-  chat        Chat?
-  logs        Log[]
-  members     Member[]
-  sheet       Sheet     @relation(fields: [sheetId], references: [id], onDelete: Cascade)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  files       File[]
+  duedate1            DateTime[]
+  duedate2            DateTime[]
+  duedate3            DateTime[]
+  duedate4            DateTime[]
+  duedate5            DateTime[]
+  workspaceId         String     @map("workspace_id")
+  sheetId             String     @map("sheet_id")
+  companyId           String     @map("company_id")
+  createdAt           DateTime   @default(now()) @map("created_at")
+  updatedAt           DateTime   @updatedAt @map("updated_at")
+  lastUpdatedByUserId String?    @map("last_updated_by_user_id")
+  lastUpdatedByUser   User?      @relation(fields: [lastUpdatedByUserId], references: [id], onDelete: SetNull)
+  order               Int        @default(autoincrement())
+  name                String
+  chat                Chat?
+  logs                Log[]
+  members             Member[]
+  sheet               Sheet      @relation(fields: [sheetId], references: [id], onDelete: Cascade)
+  workspace           Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  company             Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  files               File[]
 
-
+  // Indexes for query optimization
+  @@index([sheetId], name: "idx_tasks_sheet_id")
+  @@index([companyId], name: "idx_tasks_company_id")
+  @@index([workspaceId], name: "idx_tasks_workspace_id")
+  @@index([status], name: "idx_tasks_status")
+  @@index([priority], name: "idx_tasks_priority")
+  @@index([order], name: "idx_tasks_order")
+  @@index([lastUpdatedByUserId], name: "idx_tasks_last_updated_by_user_id")
+  // Composite indexes for common query patterns
+  @@index([sheetId, order], name: "idx_tasks_sheet_id_order")
+  @@index([sheetId, status], name: "idx_tasks_sheet_id_status")
+  @@index([sheetId, priority], name: "idx_tasks_sheet_id_priority")
+  @@index([companyId, order], name: "idx_tasks_company_id_order")
   @@map("tasks")
 }
 
 model Log {
   id          String     @id @default(uuid())
   message     String
-  companyId   String?     @map("company_id")
+  companyId   String?    @map("company_id")
   userId      String?    @map("user_id")
   createdAt   DateTime   @default(now())
   newValue    String?    @map("new_value")
@@ -331,12 +344,17 @@ model Log {
   workspaceId String?    @map("workspace_id")
   sheetId     String?    @map("sheet_id")
   taskId      String?    @map("task_id")
-  company     Company?    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company?   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sheet       Sheet?     @relation(fields: [sheetId], references: [id], onDelete: SetNull)
   task        Task?      @relation(fields: [taskId], references: [id], onDelete: SetNull)
   user        User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
 
+  // Indexes for task-related queries
+  @@index([taskId], name: "idx_logs_task_id")
+  @@index([companyId], name: "idx_logs_company_id")
+  @@index([sheetId], name: "idx_logs_sheet_id")
+  @@index([workspaceId], name: "idx_logs_workspace_id")
   @@map("logs")
 }
 
@@ -363,25 +381,25 @@ model Transaction {
 }
 
 model PaymentLog {
-  id            String   @id @default(uuid())
-  event         String
-  companyId     String?  @map("company_id")
-  userId        String?  @map("user_id")
-  transactionId String?  @map("transaction_id")
-  subscriptionId String? @map("subscription_id")
-  planId        String?  @map("plan_id")
-  amount        Int?
-  currency      String?
-  status        String?
-  errorCode     String?  @map("error_code")
-  errorMessage  String?  @map("error_message")
-  metadata      String?
-  timestamp     DateTime @default(now())
-  company       Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  subscription  CompanySubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
-  plan          Plan?    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  id             String               @id @default(uuid())
+  event          String
+  companyId      String?              @map("company_id")
+  userId         String?              @map("user_id")
+  transactionId  String?              @map("transaction_id")
+  subscriptionId String?              @map("subscription_id")
+  planId         String?              @map("plan_id")
+  amount         Int?
+  currency       String?
+  status         String?
+  errorCode      String?              @map("error_code")
+  errorMessage   String?              @map("error_message")
+  metadata       String?
+  timestamp      DateTime             @default(now())
+  company        Company?             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user           User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction    Transaction?         @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  subscription   CompanySubscription? @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  plan           Plan?                @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@map("payment_logs")
 }
@@ -435,29 +453,34 @@ model File {
   size         Int
   path         String
   uploadedBy   String   @map("uploaded_by")
-  companyId    String?   @map("company_id")
+  companyId    String?  @map("company_id")
   taskId       String?  @map("task_id")
   sheetId      String?  @map("sheet_id")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
-  
+
   uploadedByUser User     @relation("user_files", fields: [uploadedBy], references: [id], onDelete: Cascade)
-  company        Company?  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company        Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
   task           Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
   sheet          Sheet?   @relation(fields: [sheetId], references: [id], onDelete: Cascade)
   userAvatars    User[]   @relation("user_avatars")
 
+  // Indexes for task-related queries
+  @@index([taskId], name: "idx_files_task_id")
+  @@index([companyId], name: "idx_files_company_id")
+  @@index([sheetId], name: "idx_files_sheet_id")
   @@map("files")
 }
+
 model Backup {
-  id           String        @id @default(uuid())
-  createdAt    DateTime      @default(now()) @map("created_at")
-  status       BackupStatus  @default(PENDING)
-  startedAt    DateTime?     @default(now()) @map("started_at")
-  endedAt      DateTime?     @map("ended_at")
-  s3Key        String?       @map("backup_key")
-  s3Url        String?       @map("backup_url")
-  errorMessage String?       @map("error_message")
+  id           String       @id @default(uuid())
+  createdAt    DateTime     @default(now()) @map("created_at")
+  status       BackupStatus @default(PENDING)
+  startedAt    DateTime?    @default(now()) @map("started_at")
+  endedAt      DateTime?    @map("ended_at")
+  s3Key        String?      @map("backup_key")
+  s3Url        String?      @map("backup_url")
+  errorMessage String?      @map("error_message")
 
   @@map("backups")
 }

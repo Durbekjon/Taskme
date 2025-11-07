@@ -73,9 +73,10 @@ COPY --from=build /app/dist ./dist
 # Copy public directory for static assets
 COPY public ./public
 
-# Create uploads directory and set permissions
+# Create uploads directory and set permissions only on directories that need write access
+# node_modules can stay root-owned (app only needs read access)
 RUN mkdir -p public/uploads && \
-    chown -R nestjs:nodejs /app
+    chown -R nestjs:nodejs public/uploads
 
 # Switch to non-root user
 USER nestjs
